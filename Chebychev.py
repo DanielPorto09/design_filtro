@@ -161,7 +161,7 @@ for w, name in zip(w_test, freq_names):
     print(f"{name} ({freq_hz:.1f} Hz): {20*np.log10(mag):.2f} dB")
 
 # -------------------------------------------------------
-#  DIAGRAMAS CORRIGIDOS
+#  DIAGRAMAS DE ANALISE DO MÉTODO
 # -------------------------------------------------------
 
 plt.figure(figsize=(13, 9))
