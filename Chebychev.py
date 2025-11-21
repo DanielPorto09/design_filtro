@@ -23,6 +23,7 @@ def cheb_order(a_pass, a_stop, w_pass, w_stop):
     """
     # Teste de erro
     assert a_pass < a_stop, "\n===================================\nERRO, a_pass deve ser menor que a_stop\n==================================="
+    assert w_pass < w_stop, "Para Chebyshev PB, w_pass < w_stop"
 
     eps = eps_from_ap(a_pass)
 
@@ -31,6 +32,26 @@ def cheb_order(a_pass, a_stop, w_pass, w_stop):
 
     n = abs(np.ceil(num / den))
     n = int(n)
+    return n, eps
+
+
+def cheb_order_pa(a_pass, a_stop, w_pass, w_stop):
+    """
+    Ordem de Chebyshev Tipo I para passa-alta.
+    """
+    # Transformação passa-alta → passa-baixa equivalente
+    # LP equivalents
+    wp_lp = 1
+    ws_lp = w_pass / w_stop   # precisa ser > 1
+
+    assert ws_lp > 1, "\n===================================\nERRO: para Chebyshev HP, w_pass deve ser MAIOR que w_stop \n==================================="
+
+    eps = eps_from_ap(a_pass)
+
+    num = np.acosh(np.sqrt((10**(0.1*a_stop)-1)/(10**(0.1*a_pass)-1)))
+    den = np.acosh(ws_lp)
+
+    n = int(np.ceil(num / den))
     return n, eps
 
 
@@ -55,7 +76,7 @@ def chebyshev_poly(n, x):
     return C if len(C) > 1 else C[0]
 
 # -------------------------------------------------------
-#  Cálculo dos polos do Chebyshev Tipo I CORRIGIDO
+#  Cálculo dos polos do Chebyshev Tipo I P
 # -------------------------------------------------------
 
 
@@ -77,7 +98,7 @@ def cheb_poles(n, eps, w_c=1.0):  # CORREÇÃO: adicionado w_c com valor default
     return np.array(poles)
 
 # -------------------------------------------------------
-#  Função de transferência do Chebyshev CORRIGIDA
+#  Função de transferência do Chebyshev PB
 # -------------------------------------------------------
 
 
@@ -100,5 +121,41 @@ def cheb_transfer(n, eps, w_c):
     return num, den, poles
 
 # -------------------------------------------------------
-#  PRINT FUNÇÃO DE TRANSFERÊNCIA
+#  Função de transferência do Chebyshev PA
 # -------------------------------------------------------
+
+
+def cheb_transfer_pa(n, eps, w_c):
+    """
+    Função de transferência Chebyshev Tipo I passa-alta
+    """
+
+
+def cheb_transfer_pa(n, eps, w_c):
+    """
+    Função de transferência Chebyshev Tipo I passa-alta (corrigida).
+    Retorna (num, den, polos_hp), com:
+      - num: coeficientes do numerador (grau n)
+      - den: coeficientes do denominador (grau n)
+      - polos_hp: polos no plano s do filtro PA
+    """
+
+    # Polos do protótipo PB normalizado (wc = 1)
+    poles_lp = cheb_poles(n, eps, 1.0)
+
+    # Transformação LP -> HP: polos HP = w_c / polos_LP
+    poles_hp = w_c / poles_lp
+
+    # Denominador do filtro PA: poly(poles_hp) → grau n
+    den = np.real(np.poly(poles_hp))
+
+    # Ganho de referência (mesma lógica do PB)
+    if n % 2 == 0:
+        G0 = 1.0 / np.sqrt(1.0 + eps**2)
+    else:
+        G0 = 1.0
+
+    # Numerador = G0 * s^n  -> coeficientes: [G0, 0, 0, ..., 0] (n zeros)
+    num = [G0] + [0] * n
+
+    return num, den, poles_hp

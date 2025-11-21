@@ -1,5 +1,5 @@
 # FUNÇÕES E BIBLIOTECAS PUBLICAS E AUTORAIS UTILIZADAS
-from Chebychev import cheb_transfer, cheb_order, eps_from_ap, cheb_poles
+from Chebychev import cheb_transfer, cheb_order, eps_from_ap, cheb_poles, cheb_transfer_pa, cheb_order_pa
 import numpy as np
 import matplotlib.pyplot as plt
 import control as ctrl
@@ -8,6 +8,9 @@ import control as ctrl
 import sys
 sys.path.append(
     r"C:\Users\danie\OneDrive\Área de Trabalho\Facul\PDS\P2\codigos\design_filtro")
+
+
+choice = int(input("Escolha 1 (PB) ou 2 (PA): "))
 
 
 def print_transfer(num, den, poles):
@@ -20,37 +23,64 @@ def print_transfer(num, den, poles):
     for i, p in enumerate(poles, start=1):
         print(f"Polo {i}:  {p.real:+.5f}  {p.imag:+.5f}j")
 
+
+if choice == 1:
+
+    print("== Filtro Chebyshev Passa-Baixa == ")
+    # Dados do Filtro
+    f_pass = float(input("Add frequencia passante (Hz):"))
+    f_stop = float(input("Add frequencia de Corte (Hz):"))
+    a_pass = float(input("Atenuação de banda passante(dB):"))
+    a_stop = float(input("Atenuação de banda de corte(dB):"))
+
+    # Normalização
+    w_pass = 2*np.pi*f_pass
+    w_stop = 2*np.pi*f_stop
+
+    # Cálculo da ordem e de ε
+    n, eps = cheb_order(a_pass, a_stop, w_pass, w_stop)
+
+    print("Ordem mínima:", n)
+    print("Epsilon:", eps)
+
+    num, den, poles = cheb_transfer(n, eps, w_pass)
+    print_transfer(num, den, poles)
+
+    H = ctrl.TransferFunction(num, den)
+    print("\nH(T) NA FORMA PADRÃO", H)
+
+    print("\nVerificação da resposta:")
+
+
+elif choice == 2:
+
+    print("== Filtro Chebyshev Passa-Alta == ")
+    # Dados do Filtro
+    f_pass = float(input("Add frequencia passante (Hz):"))
+    f_stop = float(input("Add frequencia de Corte (Hz):"))
+    a_pass = float(input("Atenuação de banda passante(dB):"))
+    a_stop = float(input("Atenuação de banda de corte(dB):"))
+
+    # Normalização
+    w_pass = 2*np.pi*f_pass
+    w_stop = 2*np.pi*f_stop
+
+    # Cálculo da ordem e de ε
+    n, eps = cheb_order_pa(a_pass, a_stop, w_pass, w_stop)
+
+    print("Ordem mínima:", n)
+    print("Epsilon:", eps)
+
+    num, den, poles = cheb_transfer_pa(n, eps, w_pass)
+
+    H = ctrl.TransferFunction(num, den)
+    print("\nH(T) NA FORMA PADRÃO", H)
+
+
 # -------------------------------------------------------
-#  Aplicação do Chebychev do filtro
+#  Rad/s -> Hz para melhor visualização de alguns trechos
 # -------------------------------------------------------
 
-
-# Dados do Filtro
-f_pass = float(input("Add frequencia passante (Hz):"))
-f_stop = float(input("Add frequencia de Corte (Hz):"))
-a_pass = float(input("Atenuação de banda passante(dB):"))
-a_stop = float(input("Atenuação de banda de corte(dB):"))
-
-# Normalização
-w_pass = 2*np.pi*f_pass
-w_stop = 2*np.pi*f_stop
-
-# Cálculo da ordem e de ε
-n, eps = cheb_order(a_pass, a_stop, w_pass, w_stop)
-
-print("Ordem mínima:", n)
-print("Epsilon:", eps)
-
-# CORREÇÃO: Usar w_pass como frequência de corte, não w_stop
-num, den, poles = cheb_transfer(n, eps, w_pass)
-print_transfer(num, den, poles)
-
-H = ctrl.TransferFunction(num, den)
-print("\nH(T) NA FORMA PADRÃO", H)
-
-print("\nVerificação da resposta:")
-
-# CORREÇÃO: Usar freqresp em vez de bode para obter valores numéricos
 w_test = np.array([1e-6, w_pass, w_stop])  # DC, banda passante, banda de corte
 freq_names = ['DC', 'Frequência de passagem', 'Frequência de corte']
 
