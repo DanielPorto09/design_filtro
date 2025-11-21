@@ -21,6 +21,9 @@ def cheb_order(a_pass, a_stop, w_pass, w_stop):
     - a_pass e a_stop em dB
     - w_pass e w_stop em rad/s (ou equivalentes, pois é normalizado)
     """
+    # Teste de erro
+    assert a_pass < a_stop, "\n===================================\nERRO, a_pass deve ser menor que a_stop\n==================================="
+
     eps = eps_from_ap(a_pass)
 
     num = np.acosh(np.sqrt((10**(0.1*a_stop) - 1)/(10**(0.1*a_pass) - 1)))

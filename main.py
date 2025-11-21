@@ -1,14 +1,13 @@
-
-# FUNÇÕES E BIBLIOTECAS PUBLICAS UTILIZADAS
+# FUNÇÕES E BIBLIOTECAS PUBLICAS E AUTORAIS UTILIZADAS
 from Chebychev import cheb_transfer, cheb_order, eps_from_ap, cheb_poles
 import numpy as np
 import matplotlib.pyplot as plt
 import control as ctrl
 
-# IMPLEMENTAÇÃO DE FUNÇÕES MATEMÁTICAS E MÉTODOS
+# Caminho para encontrar pasta
 import sys
 sys.path.append(
-    r"C:\Users\danie\OneDrive\Área de Trabalho\Facul\PDS\P2\codigos\design_filtro_analog")
+    r"C:\Users\danie\OneDrive\Área de Trabalho\Facul\PDS\P2\codigos\design_filtro")
 
 
 def print_transfer(num, den, poles):
