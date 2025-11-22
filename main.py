@@ -143,7 +143,8 @@ if choice == 1:
         a_pass, a_stop, w_pass, w_stop)
     filtros = separa_func(num, den,
                           k_filters_fst_order,
-                          k_filters_sec_order)
+                          k_filters_sec_order,
+                          w_stop)
 
 elif choice == 2:
     # ===============

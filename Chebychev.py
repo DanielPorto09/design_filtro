@@ -103,15 +103,15 @@ def cheb_poles(n, eps, w_c=1.0):  # CORREÇÃO: adicionado w_c com valor default
 
 
 def cheb_transfer(n, eps, w_c):
-    poles = cheb_poles(n, eps, w_c)  # Agora funciona com 3 argumentos
+    poles = cheb_poles(n, eps, w_c)
 
     # Constante do ganho DC
-    if n % 2 == 0:  # n par
+    if n % 2 == 0:
         G0 = 1 / np.sqrt(1 + eps**2)
-    else:  # n ímpar
+    else:
         G0 = 1
 
-    # Construir polinômio do denominador
+    # Construir polinômio do denominador (já está na frequência correta)
     den_poly = np.poly(poles)
     den = np.real(den_poly)
 
@@ -127,35 +127,24 @@ def cheb_transfer(n, eps, w_c):
 
 def cheb_transfer_pa(n, eps, w_c):
     """
-    Função de transferência Chebyshev Tipo I passa-alta
+    Função de transferência Chebyshev Tipo I passa-alta.
     """
-
-
-def cheb_transfer_pa(n, eps, w_c):
-    """
-    Função de transferência Chebyshev Tipo I passa-alta (corrigida).
-    Retorna (num, den, polos_hp), com:
-      - num: coeficientes do numerador (grau n)
-      - den: coeficientes do denominador (grau n)
-      - polos_hp: polos no plano s do filtro PA
-    """
-
     # Polos do protótipo PB normalizado (wc = 1)
     poles_lp = cheb_poles(n, eps, 1.0)
 
     # Transformação LP -> HP: polos HP = w_c / polos_LP
     poles_hp = w_c / poles_lp
 
-    # Denominador do filtro PA: poly(poles_hp) → grau n
+    # Denominador do filtro PA
     den = np.real(np.poly(poles_hp))
 
-    # Ganho de referência (mesma lógica do PB)
+    # Ganho em alta frequência
     if n % 2 == 0:
-        G0 = 1.0 / np.sqrt(1.0 + eps**2)
+        Ginf = 1.0 / np.sqrt(1.0 + eps**2)
     else:
-        G0 = 1.0
+        Ginf = 1.0
 
-    # Numerador = G0 * s^n  -> coeficientes: [G0, 0, 0, ..., 0] (n zeros)
-    num = [G0] + [0] * n
+    # Numerador: Ginf * s^n
+    num = [Ginf] + [0] * n
 
     return num, den, poles_hp
