@@ -40,7 +40,7 @@ def print_transfer(num, den, poles):
 def printa_coef():
     print("\n===== RESULTADO FINAL =====")
     for r in resultado_componentes:
-        print(r)
+        print("\n", r)
 
 # -------------------------------------------------------
 #  DIAGRAMAS DE ANALISE DO MÉTODO

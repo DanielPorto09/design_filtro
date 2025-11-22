@@ -117,26 +117,35 @@ def separa_func(num, den, k_filters_fst_order, k_filters_sec_order):
 # ==================================================================
 
 def solve_fst_PB(b0, a0, K, C1):
-    """
-    Resolve R1 para seção 1ª ordem usando topologia fornecida.
-    Retorna dict com R1 e mensagens.
-    """
-    resultado = {"ordem": 1, "C1": C1, "K": K}
 
-    # Se a0 == 0, não faz sentido
+    resultado = {"ordem": 1, "C1": C1, "K": K}
+   # nao da pra a0 ser 0, se nao da M.
     if abs(a0) < 1e-30:
         resultado.update(
             {"error": "a0 quase zero, não é possível resolver R1."})
         return resultado
 
+    # Cálculo do resistor
     R1 = 1.0 / (a0 * C1)
-    resultado["R1"] = float(R1)
+    R1 = float(R1)
 
-    # Verificação de consistência: b0 ~ K * a0
+    # --- Limite máximo para R1 ---
+    limite = 1e6  # 1 megaohm
+    if not (0 < R1 < limite):
+        resultado.update({
+            "error": (
+                f"R1 encontrado fora do intervalo físico (R1={R1:.3g} Ω). "
+                f"Limite máximo = {limite} Ω."
+            )
+        })
+        return resultado
+
+    resultado["R1"] = R1
+
+    # Verificação de consistência b0 ≈ K*a0
     if abs(b0 - K*a0) > max(1e-9, 1e-6 * abs(b0)):
         resultado["warning"] = (
-            f"Inconsistência: b0 != K*a0 (b0={b0:.6g}, K*a0={(K*a0):.6g}).\n"
-            "Isso pode significar que K, C1 ou a0 não batem com a topologia."
+            f"Inconsistência: b0 != K*a0 (b0={b0:.6g}, K*a0={(K*a0):.6g})."
         )
     else:
         resultado["ok"] = True
@@ -178,7 +187,10 @@ def solve_scd_PB(b0, a1, a0, K, C1, C2):
             r2_val = float(s[R2])
         except Exception:
             continue
-        if np.isreal(r1_val) and np.isreal(r2_val) and r1_val > 0 and r2_val > 0:
+
+        limite = 1e6  # limite superior para resistores
+
+        if (np.isreal(r1_val) and np.isreal(r2_val) and r1_val > 0 and r2_val > 0 and r1_val < limite and r2_val < limite):
             reais_positivas.append({"R1": r1_val, "R2": r2_val})
 
     if not reais_positivas:
