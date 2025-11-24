@@ -157,7 +157,11 @@ def process_filter_list(filtros):
             data = solve_first_order(num, den)
         elif ordem == 2:
             # chama o projetista automático (MFB first, SK fallback)
-            data = solve_biquad_svf(num, den)
+            a_val = float(num[0])
+            c_val = float(den[1])
+            d_val = float(den[2])
+            data = solve_biquad_svf(a_val, c_val, d_val)
+
         else:
             raise ValueError("Filtro não é 1ª nem 2ª ordem!")
 
