@@ -35,6 +35,7 @@ def cheb_order(a_pass, a_stop, w_pass, w_stop):
     return n, eps
 
 
+
 def cheb_order_pa(a_pass, a_stop, w_pass, w_stop):
     """
     Ordem de Chebyshev Tipo I para passa-alta.

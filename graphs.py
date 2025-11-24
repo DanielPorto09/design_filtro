@@ -6,7 +6,6 @@ import numpy as np
 #  DIAGRAMAS DE ANALISE DA FT ORIGINAL
 # -------------------------------------------------------
 
-
 def anlize_em_frequencia(H, f_pass, f_stop, a_pass, a_stop, w_pass, w_stop):
 
     # DC, banda passante, banda de corte
@@ -81,6 +80,10 @@ def anlize_em_frequencia(H, f_pass, f_stop, a_pass, a_stop, w_pass, w_stop):
     plt.show()
 
 
+# ==================================================
+# EXIBE FUNÇÕES SEPARADAS PRA CADA FILTRO DA CASCATA
+# ==================================================
+
 def PrintaPlota_lista_de_filtros(filtros):
     # PRINTA  CADA FILTRO
     print("=== Lista de filtros encontrados ===")
@@ -97,3 +100,26 @@ def PrintaPlota_lista_de_filtros(filtros):
         ctrl.bode(f, dB=True, Hz=True, deg=True, label=f"Filtro {i+1}")
         plt.suptitle(f"Bode do Filtro {i+1}")
         plt.show()
+    
+
+# ================================
+# EXIBE OS VALORES DOS COMPONETNES
+# ================================
+
+def print_resultados(resultados):
+    """
+    Recebe a lista de dicionários 'resultados' e imprime cada filtro formatado.
+    """
+    print("\n=== RESULTADOS DOS FILTROS ===")
+
+    for i, data in enumerate(resultados):
+        print(f"\n--- Filtro {i+1} ---")
+        print(f"Tipo: {data['tipo']}ª ordem")
+        print(f"R1 = {data['R1']}")
+        print(f"R2 = {data['R2']}")
+        print(f"C1 = {data['C1']}")
+        print(f"C2 = {data['C2']}")
+        print(f"Ra = {data['Ra']}")
+        print(f"Rb = {data['Rb']}")
+        print(f"K  = {data['K']}")
+

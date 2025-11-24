@@ -1,3 +1,4 @@
+from math import sqrt
 from Chebychev import cheb_transfer, cheb_order, cheb_order_pa
 import numpy as np
 import control as ctrl
@@ -8,103 +9,158 @@ import sys
 sys.path.append(
     r"C:\Users\danie\OneDrive\Área de Trabalho\Facul\PDS\P2\codigos\design_filtro")
 
-# =====================================
-# SEPARANDO EM FILTROS DE MENOR ORDEM
-# ======================================
+# ===================================
+# CALCULO DOS COMPONENTES DOS FILTROS
+# ===================================
 
-def n_filtros_PB(a_pass, a_stop, w_pass, w_stop):
 
-    n, trash = cheb_order(a_pass, a_stop, w_pass, w_stop)
-    k_fillters_sec_order = 0
-    k_fillters_frt_order = 0
-
-    if n % 2 == 1:
-        k_filters_fst_order = 1
-        k_filters_sec_order = (n - 1) // 2
-    else:
-        k_filters_fst_order = 0
-        k_filters_sec_order = n // 2
-
-    return k_filters_fst_order, k_filters_sec_order
-
-def n_filtros_PA(a_pass, a_stop, w_pass, w_stop):
-
-    n, trash = cheb_order_pa(a_pass, a_stop, w_pass, w_stop)
-    k_fillters_sec_order = 0
-    k_fillters_frt_order = 0
-
-    if n % 2 == 1:
-        k_filters_fst_order = 1
-        k_filters_sec_order = (n - 1) // 2
-    else:
-        k_filters_fst_order = 0
-        k_filters_sec_order = n // 2
-
-    return k_filters_fst_order, k_filters_sec_order
-
-def separa_func(num, den, k_filters_fst_order, k_filters_sec_order):
+def solve_first_order(num, den):
     """
-    Decompõe H(s) em k1 filtros de 1ª ordem e k2 de 2ª ordem.
+    Resolve o sistema para filtros de 1ª ordem.
+    H(s) = a / (b*s + c)
+
+    Modelo:
+        a = R2/R1
+        b = R2*C1
+        c = 1  (normalizado)
     """
-    H_total = ctrl.TransferFunction(num, den)
+    print("\n--- Filtro de Primeira Ordem ---")
 
-    # Polos da função completa
-    poles = np.roots(den)
+    R1 = float(input("Escolha um valor para R1 [Ohms]: "))
 
-    filtros = []
-    usados = np.zeros(len(poles), dtype=bool)
+    a = float(num[0])     # a = R2/R1
+    b = float(den[0])     # b = R2*C1
+    c = float(den[1])     # normalmente = 1
 
-    # ---- 1ª ORDEM ---------------------------------------------------
-    for i in range(len(poles)):
-        if usados[i]:
-            continue
+    R2 = a * R1
+    C1 = b / R2
 
-        p = poles[i]
+    return {
+        "tipo": 1,
+        "R1": R1,
+        "R2": R2,
+        "C1": C1,
+        "C2": 0,
+        "Ra": 0,
+        "Rb": 0,
+        "K": a
+    }
 
-        # Polo real → 1ª ordem
-        if np.isclose(p.imag, 0):
-            den1 = [1, -p.real]
-            num1 = [1]
-            F = ctrl.TransferFunction(num1, den1)
-            filtros.append(F)
-            usados[i] = True
+# utilitário: verificar se resistores estão em faixa prática
 
-            if len([f for f in filtros if f.den[0][0].size == 2]) == k_filters_fst_order:
-                break
 
-    # ---- 2ª ORDEM ---------------------------------------------------
-    for i in range(len(poles)):
-        if usados[i]:
-            continue
+def _resistors_reasonable(Rvals, R_min=1.0, R_max=1e7):
+    return all((R_min <= rv <= R_max) for rv in Rvals)
 
-        p = poles[i]
+# === MFB: equações corretas (retornam dict) ===
 
-        # Procurar conjugado
-        j = np.where(
-            np.isclose(poles.real,  p.real) &
-            np.isclose(poles.imag, -p.imag) &
-            (~usados)
-        )[0]
 
-        if len(j) == 0:
-            continue
+def _solve_mfb_given_caps(a_val, c_val, d_val, C1, C2, chute=[10e3, 10e3, 10e3]):
+    """
+    Resolve MFB para R1, R2, R3 dado C1,C2 e coeficientes a,c,d.
+    Retorna dict com R1,R2,R3 ou lança Exception se não convergir.
+    """
+    R1, R2, R3 = sp.symbols("R1 R2 R3", positive=True)
 
-        j = j[0]
+    eq1 = d_val - 1/(R2*R3*C1*C2)  # wn^2
+    eq2 = c_val - (1/C1)*(1/R2 + 1/R3 + 1/R1)  # wn/Q
+    eq3 = a_val - (R3/R1)  # ganho DC
 
-        # coeficientes do polinômio s² - 2α s + (α² + β²)
-        alpha = p.real
-        beta = p.imag
-        den2 = [1, -2*alpha, alpha*alpha + beta*beta]
-        num2 = [1]
+    try:
+        sol = sp.nsolve([eq1, eq2, eq3], [R1, R2, R3],
+                        chute, tol=1e-6, maxsteps=60)
+    except Exception as e:
+        raise
 
-        F = ctrl.TransferFunction(num2, den2)
-        filtros.append(F)
+    R1v = float(sol[0])
+    R2v = float(sol[1])
+    R3v = float(sol[2])
 
-        usados[i] = True
-        usados[j] = True
+    return {"R1": R1v, "R2": R2v, "R3": R3v}
 
-        if len([f for f in filtros if f.den[0][0].size == 3]) == k_filters_sec_order:
-            break
+# === SALLEN-KEY: equações (non-inverting SK with gain K) ===
 
-    return filtros
 
+def _solve_sallen_key(a_val, c_val, d_val, C, chute=[10e3, 10e3, 1.0]):
+    """
+    Resolve Sallen-Key não-inversor (com ganho K a determinar),
+    assumindo C1 = C2 = C.
+    Variáveis: R1, R2, K
+    Equações (denominator comparadas com s^2 + c s + d):
+       1) d = 1/(R1*R2*C*C)
+       2) c = (C*(R1 + R2) + C*R1*(1 - K)) / (R1*R2*C*C)
+          => simplifica para numerator /(R1*R2*C*C)
+       3) a = K   (DC gain)
+    """
+    R1, R2, K = sp.symbols("R1 R2 K", positive=True)
+
+    eq1 = d_val - 1/(R1*R2*C*C)
+    # termo s: C*(R1 + R2) + C*R1*(1 - K)  -> divide por (R1*R2*C*C)
+    eq2 = c_val - (C*(R1 + R2) + C*R1*(1 - K)) / (R1*R2*C*C)
+    eq3 = a_val - K
+
+    try:
+        sol = sp.nsolve([eq1, eq2, eq3], [R1, R2, K],
+                        chute, tol=1e-6, maxsteps=80)
+    except Exception as e:
+        raise
+
+    return {"R1": float(sol[0]), "R2": float(sol[1]), "K": float(sol[2])}
+
+# === função principal que tenta MFB e faz fallback SK ===
+
+
+def solve_biquad_svf(a_val, c_val, d_val):
+    import math
+
+    # frequência natural
+    wn = math.sqrt(d_val)
+
+    # Q
+    Q = wn / c_val
+
+    # escolha automática de C
+    C = 10e-9   # 10 nF padrão
+
+    # escolha de R integrador
+    R_int = 1/(wn*C)
+
+    # ganho → Rg/Rf
+    K = a_val
+
+    # retorno no formato
+    return {
+        "tipo": 2,
+        "topologia": "SVF",
+        "R1": R_int,
+        "R2": R_int,
+        "C1": C,
+        "C2": C,
+        "Ra": K,
+        "Rb": 0,
+        "K": K
+    }
+
+# adapta process_filter_list para usar solve_biquad_auto (substitui chamada anterior)
+
+
+def process_filter_list(filtros):
+    resultados = []
+
+    for f in filtros:
+        num = f.num[0][0]
+        den = f.den[0][0]
+        ordem = len(den) - 1
+
+        if ordem == 1:
+            # usa sua função existente
+            data = solve_first_order(num, den)
+        elif ordem == 2:
+            # chama o projetista automático (MFB first, SK fallback)
+            data = solve_biquad_svf(num, den)
+        else:
+            raise ValueError("Filtro não é 1ª nem 2ª ordem!")
+
+        resultados.append(data)
+
+    return resultados
