@@ -47,7 +47,7 @@ def n_filtros_PA(a_pass, a_stop, w_pass, w_stop):
 def separa_func(num, den, k_filters_fst_order, k_filters_sec_order):
     """
     Decompõe H(s) em k1 filtros de 1ª ordem e k2 de 2ª ordem.
-    Retorna SEMPRE uma lista plana de TransferFunctions.
+    Retorna uma lista de TransferFunctions.
     """
     # dividindo o ganho entre as fts menores
     k_filters = k_filters_fst_order + k_filters_sec_order
@@ -127,10 +127,8 @@ def add_zeros_em_FT(filtros):
     Recebe uma lista de TransferFunction (seções) produzidas por separa_func(),
     e retorna uma nova lista onde cada seção ganhou os zeros em s (na origem)
     equivalentes à sua ordem:
-      - seção 1ª ordem: numerador -> K * s  -> [K, 0]
-      - seção 2ª ordem: numerador -> K * s^2-> [K, 0, 0]
-    A função assume que o numerador atual de cada seção é apenas [K] (constante),
-    como seu separador atual monta.
+      - 1ª ordem: numerador -> K * s  -> [K, 0]
+      - 2ª ordem: numerador -> K * s^2-> [K, 0, 0]
     """
     filtros_hp = []
 

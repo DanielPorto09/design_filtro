@@ -7,6 +7,10 @@ import numpy as np
 # -------------------------------------------------------
 
 def anlize_em_frequencia(H, f_pass, f_stop, a_pass, a_stop, w_pass, w_stop):
+    """
+    Recebe parametros do filtro e plota root-locus, diagrama de bode e frequencia 
+    de corte e passagem
+    """
 
     # DC, banda passante, banda de corte
     w_test = np.array([1e-6, w_pass, w_stop])

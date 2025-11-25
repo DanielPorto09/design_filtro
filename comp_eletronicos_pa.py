@@ -1,34 +1,31 @@
-import math as mt
+import math
+from comp_eletronicos_pb import solve_biquad_svf
 
 import sys
 sys.path.append(
     r"C:\Users\danie\OneDrive\Área de Trabalho\Facul\PDS\P2\codigos\design_filtro")
 
-# ===================================
-# CALCULO DOS COMPONENTES DOS FILTROS
-# ===================================
 
-
-def solve_first_order(num, den):
+def solve_first_order_pa(num, den):
     """
     Resolve o sistema para filtros de 1ª ordem.
-    H(s) = a / (b*s + c)
+    H(s) = a*s / (b*s + c)
 
     Modelo:
         a = R2/R1
-        b = R2*C1
-        c = 1  (normalizado)
+        b = 1
+        c = 1/C*R1
     """
     print("\n--- Filtro de Primeira Ordem ---")
 
     R1 = float(input("Escolha um valor para R1 [Ohms]: "))
 
     a = float(num[0])     # a = R2/R1
-    b = float(den[0])     # b = R2*C1
-    c = float(den[1])     # normalmente = 1
+    b = float(den[0])     # b = 1
+    c = float(den[1])     # c = 1/C*R1
 
     R2 = a * R1
-    C1 = b / R2
+    C1 = 1 / (c*R1)
 
     return {
         "tipo": 1,
@@ -41,43 +38,10 @@ def solve_first_order(num, den):
         "K": a
     }
 
-# === função principal que tenta MFB e faz fallback SK ===
-
-
-def solve_biquad_svf(a_val, c_val, d_val):
-
-    # frequência natural
-    wn = mt.sqrt(d_val)
-
-    # Q
-    Q = wn / c_val
-
-    # escolha automática de C
-    C = 10e-9   # 10 nF padrão
-
-    # escolha de R integrador
-    R_int = 1/(wn*C)
-
-    # ganho → Rg/Rf
-    K = a_val
-
-    # retorno no formato
-    return {
-        "tipo": 2,
-        "topologia": "SVF",
-        "R1": R_int,
-        "R2": R_int,
-        "C1": C,
-        "C2": C,
-        "Ra": K,
-        "Rb": 0,
-        "K": K
-    }
-
 # adapta process_filter_list para usar solve_biquad_auto (substitui chamada anterior)
 
 
-def process_filter_list(filtros):
+def process_filter_list_pa(filtros):
     resultados = []
 
     for f in filtros:
@@ -87,7 +51,7 @@ def process_filter_list(filtros):
 
         if ordem == 1:
             # usa sua função existente
-            data = solve_first_order(num, den)
+            data = solve_first_order_pa(num, den)
         elif ordem == 2:
             # chama o projetista automático (MFB first, SK fallback)
             a_val = float(num[0])
