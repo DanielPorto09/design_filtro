@@ -150,8 +150,9 @@ def cheb_transfer(n, eps, w_c):
         den = np.convolve(den, [1, -2*alpha, alpha*alpha + beta*beta])
 
     # adiciona polos reais ímpares (se houver)
-    for pr in real_poles:
-        den = np.convolve(den, [1, -pr])
+    if n % 2 == 0:
+        for pr in real_poles:
+            den = np.convolve(den, [1, -pr])
 
     den = np.real_if_close(den)
 
