@@ -35,7 +35,6 @@ def cheb_order(a_pass, a_stop, w_pass, w_stop):
     return n, eps
 
 
-
 def cheb_order_pa(a_pass, a_stop, w_pass, w_stop):
     """
     Ordem de Chebyshev Tipo I para passa-alta.
@@ -104,26 +103,81 @@ def cheb_poles(n, eps, w_c=1.0):  # CORREÇÃO: adicionado w_c com valor default
 
 
 def cheb_transfer(n, eps, w_c):
-    poles = cheb_poles(n, eps, w_c)  # Agora funciona com 3 argumentos
+    """
+    Gera H(s) Chebyshev Tipo I passa-baixa conforme fórmulas analíticas.
+    Corrige os casos de n par e n ímpar.
+    """
 
-    # Constante do ganho DC
-    if n % 2 == 0:  # n par
-        G0 = 1 / np.sqrt(1 + eps**2)
-    else:  # n ímpar
-        G0 = 1
+    # ----------------------------
+    # 1) Calcula polos normalizados
+    # ----------------------------
+    poles = cheb_poles(n, eps, w_c)
 
-    # Construir polinômio do denominador
-    den_poly = np.poly(poles)
-    den = np.real(den_poly)
+    # ----------------------------
+    # 2) Agrupa polos em reais e complexos conjugados
+    # ----------------------------
+    real_poles = []
+    complex_pairs = []
 
-    # Ajustar o numerador para ganho DC correto
-    num = [G0 * den[0]]
+    usados = np.zeros(len(poles), dtype=bool)
+    for i, p in enumerate(poles):
+        if usados[i]:
+            continue
 
-    return num, den, poles
+        if abs(p.imag) < 1e-12:
+            real_poles.append(p.real)
+            usados[i] = True
+        else:
+            # procura conjugado
+            for j in range(i+1, len(poles)):
+                if usados[j]:
+                    continue
+                if abs(poles[j].real - p.real) < 1e-9 and \
+                   abs(poles[j].imag + p.imag) < 1e-9:
+                    complex_pairs.append((p, poles[j]))
+                    usados[i] = usados[j] = True
+                    break
 
-# -------------------------------------------------------
-#  Função de transferência do Chebyshev PA
-# -------------------------------------------------------
+    # ----------------------------
+    # 3) Montagem do denominador
+    # ----------------------------
+    den = [1.0]
+
+    if n % 2 == 1:
+        # termo linear extra: (s + sinh(D))
+        beta = np.arcsinh(1/eps) / n
+        D = np.sinh(beta)
+        den = np.convolve(den, [1, D*w_c])  # escalonado
+    else:
+        D = None
+
+    # adiciona pares quadráticos
+    for p, pc in complex_pairs:
+        alpha = p.real
+        beta = p.imag
+        den = np.convolve(den, [1, -2*alpha, alpha*alpha + beta*beta])
+
+    # adiciona polos reais ímpares (se houver)
+    for pr in real_poles:
+        den = np.convolve(den, [1, -pr])
+
+    den = np.real_if_close(den)
+
+    # ----------------------------
+    # 4) Montagem do numerador
+    # ----------------------------
+    if n % 2 == 0:
+        # n par: fórmula 10^(0.05*ap) * prod(B2m)
+        G0 = 1 / np.sqrt(1 + eps*eps)
+        num = [G0 * den[0]]
+    else:
+        # n ímpar: sinh(D) * prod(B2m)
+        beta = np.arcsinh(1/eps) / n
+        D = np.sinh(beta)
+
+        num = [D * den[0]]
+
+    return num, den.tolist(), poles
 
 
 def cheb_transfer_pa(n, eps, w_c):
@@ -160,4 +214,3 @@ def cheb_transfer_pa(n, eps, w_c):
     num = [G0] + [0] * n
 
     return num, den, poles_hp
-

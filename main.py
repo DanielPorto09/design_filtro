@@ -16,8 +16,6 @@ sys.path.append(
     r"C:\Users\danie\OneDrive\Área de Trabalho\Facul\PDS\P2\codigos\design_filtro")
 
 
-
-
 # teste de saida dos filtros
 
 def print_filtros(filtros):
@@ -71,8 +69,7 @@ def print_filtros(filtros):
         print("==============================\n")
 
 
-
-def print_transfer(num, den, poles):
+def print_transfer_poles(num, den, poles):
     print("\n===============================")
     print(" Função de Transferência H(s) ")
     print("===============================\n")
@@ -103,7 +100,7 @@ if choice == 1:
     print("Epsilon:", eps)
 
     num, den, poles = cheb_transfer(n, eps, w_pass)
-    print_transfer(num, den, poles)
+    print_transfer_poles(num, den, poles)
 
     H = ctrl.TransferFunction(num, den)
     print("\nH(T) NA FORMA PADRÃO", H)
@@ -111,7 +108,7 @@ if choice == 1:
     k_filters_fst_order, k_filters_sec_order = n_filtros_PB(
         a_pass, a_stop, w_pass, w_stop)
     filtros = separa_func(num, den, k_filters_fst_order, k_filters_sec_order)
-#TESTE
+# TESTE
     print_filtros(filtros)
 # CALCULO DOS VALORES DOS COMPONENTES ELETRÔNICOS
     resultados = process_filter_list(filtros)
@@ -136,7 +133,7 @@ elif choice == 2:
     print("Epsilon:", eps)
 
     num, den, poles = cheb_transfer_pa(n, eps, w_pass)
-    print_transfer(num, den, poles)
+    print_transfer_poles(num, den, poles)
 
     H = ctrl.TransferFunction(num, den)
     print("\nH(T) NA FORMA PADRÃO", H)
@@ -150,6 +147,6 @@ elif choice == 2:
 
 
 # PLOTA AS COISAS -> FUNÇÕES DE GRAPHS
-# anlize_em_frequencia(H, f_pass, f_stop, a_pass, a_stop, w_pass, w_stop)
+anlize_em_frequencia(H, f_pass, f_stop, a_pass, a_stop, w_pass, w_stop)
 # PrintaPlota_lista_de_filtros(filtros)
 print_resultados(resultados)
