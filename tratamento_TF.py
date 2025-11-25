@@ -121,3 +121,36 @@ def separa_func(num, den, k_filters_fst_order, k_filters_sec_order):
             break
 
     return filtros
+
+def add_zeros_em_FT(filtros):
+    """
+    Recebe uma lista de TransferFunction (seções) produzidas por separa_func(),
+    e retorna uma nova lista onde cada seção ganhou os zeros em s (na origem)
+    equivalentes à sua ordem:
+      - seção 1ª ordem: numerador -> K * s  -> [K, 0]
+      - seção 2ª ordem: numerador -> K * s^2-> [K, 0, 0]
+    A função assume que o numerador atual de cada seção é apenas [K] (constante),
+    como seu separador atual monta.
+    """
+    filtros_hp = []
+
+    for f in filtros:
+        # extrai num/den na forma usada pelo control
+        num = f.num[0][0]
+        den = f.den[0][0]
+
+        # ordem da seção
+        ordem = len(den) - 1  # 1 => 1ª ordem, 2 => 2ª ordem
+
+        # pega o ganho atual (constante no numerador)
+        # se o numerador tiver mais coeficientes, pega o coeficiente de maior grau
+        # (mas separa_func atual coloca apenas [pedaco_ganho])
+        K = float(num[0])
+
+        # novo numerador = K * s^ordem  -> coeficientes: [K] + [0]*ordem
+        novo_num = [K] + [0] * ordem
+
+        # monta nova TF e anexa
+        filtros_hp.append(ctrl.TransferFunction(novo_num, den))
+
+    return filtros_hp

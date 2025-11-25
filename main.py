@@ -1,8 +1,8 @@
 # FUNÇÕES E BIBLIOTECAS PUBLICAS E AUTORAIS UTILIZADAS
 import sys
 from Chebychev import cheb_transfer, cheb_order, cheb_transfer_pa, cheb_order_pa
-from tratamento_TF import n_filtros_PA, n_filtros_PB, separa_func
-from comp_eletronicos import process_filter_list
+from tratamento_TF import n_filtros_PA, n_filtros_PB, separa_func, add_zeros_em_FT
+from comp_eletronicos_pb import process_filter_list
 from graphs import anlize_em_frequencia, PrintaPlota_lista_de_filtros, print_resultados
 import numpy as np
 import control as ctrl
@@ -141,12 +141,13 @@ elif choice == 2:
     k_filters_fst_order, k_filters_sec_order = n_filtros_PA(
         a_pass, a_stop, w_pass, w_stop)
     filtros = separa_func(num, den, k_filters_fst_order, k_filters_sec_order)
+    filtros = add_zeros_em_FT(filtros)
 
     # CALCULO DOS VALORES DOS COMPONENTES ELETRÔNICOS
-    resultados = process_filter_list(filtros)
+    # resultados = process_filter_list(filtros)
 
 
 # PLOTA AS COISAS -> FUNÇÕES DE GRAPHS
 anlize_em_frequencia(H, f_pass, f_stop, a_pass, a_stop, w_pass, w_stop)
-# PrintaPlota_lista_de_filtros(filtros)
-print_resultados(resultados)
+PrintaPlota_lista_de_filtros(filtros)
+# print_resultados(resultados)

@@ -75,12 +75,8 @@ def chebyshev_poly(n, x):
 
     return C if len(C) > 1 else C[0]
 
-# -------------------------------------------------------
-#  Cálculo dos polos do Chebyshev Tipo I P
-# -------------------------------------------------------
 
-
-def cheb_poles(n, eps, w_c=1.0):  # CORREÇÃO: adicionado w_c com valor default
+def cheb_poles(n, eps, w_c=1.0): 
     """
     Calcula os polos do Chebyshev Tipo I com escalonamento de frequência.
     """
@@ -96,10 +92,6 @@ def cheb_poles(n, eps, w_c=1.0):  # CORREÇÃO: adicionado w_c com valor default
         poles.append(pole)
 
     return np.array(poles)
-
-# -------------------------------------------------------
-#  Função de transferência do Chebyshev PB
-# -------------------------------------------------------
 
 
 def cheb_transfer(n, eps, w_c):
@@ -182,35 +174,84 @@ def cheb_transfer(n, eps, w_c):
 
 def cheb_transfer_pa(n, eps, w_c):
     """
-    Função de transferência Chebyshev Tipo I passa-alta
+    Chebyshev Tipo I – Passa-Alta (PA)
+    Corrigido para tratar n par e n ímpar conforme a topologia correta.
     """
+    # ======================================================
+    # 1) Polos passa-baixa normalizados (wc = 1)
+    # ======================================================
+    poles_lp = cheb_poles(n, eps, 1.0)   
 
+    # ======================================================
+    # 2) Transformação LP → HP   (p_hp = wc / p_lp)
+    # ======================================================
+    poles_hp = np.array([w_c / p for p in poles_lp])
 
-def cheb_transfer_pa(n, eps, w_c):
-    """
-    Função de transferência Chebyshev Tipo I passa-alta (corrigida).
-    Retorna (num, den, polos_hp), com:
-      - num: coeficientes do numerador (grau n)
-      - den: coeficientes do denominador (grau n)
-      - polos_hp: polos no plano s do filtro PA
-    """
+    # ======================================================
+    # 3) Agrupar polos hp em reais e pares complexos
+    # ======================================================
+    usados = np.zeros(len(poles_hp), dtype=bool)
+    real_poles = []
+    complex_pairs = []
 
-    # Polos do protótipo PB normalizado (wc = 1)
-    poles_lp = cheb_poles(n, eps, 1.0)
+    for i, p in enumerate(poles_hp):
+        if usados[i]:
+            continue
 
-    # Transformação LP -> HP: polos HP = w_c / polos_LP
-    poles_hp = w_c / poles_lp
+        if abs(p.imag) < 1e-12:
+            real_poles.append(p.real)
+            usados[i] = True
+        else:
+            for j in range(i+1, len(poles_hp)):
+                if usados[j]:
+                    continue
 
-    # Denominador do filtro PA: poly(poles_hp) → grau n
-    den = np.real(np.poly(poles_hp))
+                if abs(p.real - poles_hp[j].real) < 1e-9 and \
+                   abs(p.imag + poles_hp[j].imag) < 1e-9:
 
-    # Ganho de referência (mesma lógica do PB)
-    if n % 2 == 0:
-        G0 = 1.0 / np.sqrt(1.0 + eps**2)
+                    complex_pairs.append((p, poles_hp[j]))
+                    usados[i] = usados[j] = True
+                    break
+
+    # ======================================================
+    # 4) Construção do denominador HP
+    # ======================================================
+    den = [1.0]
+
+    # ----- termo linear extra (n ímpar)
+    if n % 2 == 1:
+        beta = np.arcsinh(1/eps) / n
+        D = np.sinh(beta)
+        # termo HP correspondente a (s + D) do PB:
+        # (s + D) → (s + w_c*D)
+        den = np.convolve(den, [1.0, -w_c * D])
     else:
-        G0 = 1.0
+        D = None   # só para manter compatível
 
-    # Numerador = G0 * s^n  -> coeficientes: [G0, 0, 0, ..., 0] (n zeros)
-    num = [G0] + [0] * n
+    # ----- pares complexos transformados
+    for p, pc in complex_pairs:
+        alpha = p.real
+        beta = p.imag
+        den = np.convolve(den, [1.0, -2*alpha, alpha*alpha + beta*beta])
+
+    # ----- polos reais restantes (se existirem)
+    for pr in real_poles:
+        den = np.convolve(den, [1.0, -pr])
+
+    den = np.real_if_close(den).tolist()
+
+    # ======================================================
+    # 5) Numerador HP — obrigatório s^n
+    # ======================================================
+    if n % 2 == 0:
+        # ganho DC equivalente ao PB espelhado
+        K = 1.0 / np.sqrt(1 + eps**2)
+    else:
+        beta = np.arcsinh(1/eps) / n
+        D = np.sinh(beta)
+        K = D
+
+    # numerador HP = K * s^n
+    num = [K] + [0]*n
 
     return num, den, poles_hp
