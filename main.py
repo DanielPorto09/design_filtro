@@ -7,6 +7,7 @@ from comp_eletronicos_pa import process_filter_list_pa
 from graphs import anlize_em_frequencia, PrintaPlota_lista_de_filtros, print_resultados
 import numpy as np
 import control as ctrl
+import sympy as sp
 
 # Variaveis globais
 choice = int(input("Escolha 1 (PB) ou 2 (PA): "))
@@ -18,35 +19,27 @@ sys.path.append(
 
 
 # teste de saida dos filtros
+def extract_from_any(f):
+    # Extrai num e den de vários formatos possíveis.
+
+    # Caso seja TransferFunction
+    if isinstance(f, ctrl.TransferFunction):
+        num = f.num[0][0]
+        den = f.den[0][0]
+        return list(map(float, num)), list(map(float, den))
+
+    # Caso seja dicionário
+    if isinstance(f, dict):
+        num = f["num"]
+        den = f["den"]
+        return list(map(float, num)), list(map(float, den))
+
+    # Caso contrário: não reconhecido
+    raise TypeError("Formato de filtro não suportado.")
+
 
 def print_filtros(filtros):
 
-    # Recebe uma lista de filtros que podem ser objetos TransferFunction
-    # ou dicionários {"num":..., "den":...} e imprime seus coeficientes.
-
-    import sympy as sp
-
-    def extract_from_any(f):
-        # Extrai num e den de vários formatos possíveis.
-
-        # Caso seja TransferFunction
-        if isinstance(f, ctrl.TransferFunction):
-            num = f.num[0][0]
-            den = f.den[0][0]
-            return list(map(float, num)), list(map(float, den))
-
-        # Caso seja dicionário
-        if isinstance(f, dict):
-            num = f["num"]
-            den = f["den"]
-            return list(map(float, num)), list(map(float, den))
-
-        # Caso contrário: não reconhecido
-        raise TypeError("Formato de filtro não suportado.")
-
-    # ---------------------------------------------------------
-    # Loop nos filtros
-    # ---------------------------------------------------------
     for idx, filtro in enumerate(filtros):
         if not isinstance(filtro, (dict, ctrl.TransferFunction)):
             print(f"ERRO: tipo inesperado dentro de filtros -> {type(filtro)}")
@@ -151,4 +144,4 @@ elif choice == 2:
 # PLOTA AS COISAS -> FUNÇÕES DE GRAPHS
 anlize_em_frequencia(H, f_pass, f_stop, a_pass, a_stop, w_pass, w_stop)
 PrintaPlota_lista_de_filtros(filtros)
-print_resultados(resultados)
+# print_resultados(resultados)
